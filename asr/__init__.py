@@ -1,3 +1,5 @@
+import uuid
+
 import gevent.monkey
 gevent.monkey.patch_all()
 import base64
@@ -31,10 +33,13 @@ def parse_chunks(stream):
         end = this_frame.find(boundary)
         if end > -1:
             frame = this_frame[:end]
-            if frame != b'':
-                header, content = frame.split(b'\r\n\r\n', 1)
-                yield content[:-2]
             this_frame = this_frame[end + len(boundary):]
+            if frame != b'':
+                try:
+                    header, content = frame.split(b'\r\n\r\n', 1)
+                except ValueError:
+                    continue
+                yield content[:-2]
         if content == b'':
             print("End of input.")
             break
@@ -77,7 +82,7 @@ def recognise():
         for result in result.json()['results']:
             words.extend({
                              'word': x,
-                             'confidence': result['alternatives'][0]['confidence']
+                             'confidence': str(result['alternatives'][0]['confidence']),
                          } for x in result['alternatives'][0]['transcript'].split(' '))
 
     # Now for some reason we also need to give back a mime/multipart message...
@@ -103,7 +108,9 @@ def recognise():
         }))
     parts.attach(response_part)
 
-    response = Response(parts.as_string().split("\n", 3)[3])
+    parts.set_boundary('--Nuance_NMSP_vutc5w1XobDdefsYG3wq')
+
+    response = Response('\r\n' + parts.as_string().split("\n", 3)[3].replace('\n', '\r\n'))
     response.headers['Content-Type'] = f'multipart/form-data; boundary={parts.get_boundary()}'
     return response
 
