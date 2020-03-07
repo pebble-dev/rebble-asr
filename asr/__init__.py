@@ -45,6 +45,10 @@ def parse_chunks(stream):
             break
 
 
+@app.route('/heartbeat')
+def heartbeat():
+    return 'ok'
+
 @app.route('/NmspServlet/', methods=["POST"])
 def recognise():
     stream = request.stream

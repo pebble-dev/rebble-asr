@@ -1,0 +1,9 @@
+steps:
+- name: 'gcr.io/cloud-builders/docker'
+  args:
+  - build
+  - "--tag=gcr.io/pebble-rebirth/asr"
+  - "--file=./Dockerfile"
+  - .
+images:
+- "gcr.io/pebble-rebirth/asr"
