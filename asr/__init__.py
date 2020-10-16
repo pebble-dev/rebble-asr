@@ -69,7 +69,7 @@ def recognise():
             'language_code': lang,
             'sample_rate_hertz': 16000,
             'max_alternatives': 1,
-            'enableAutomaticPunctuation': true,
+            'enableAutomaticPunctuation': True,
             # 'metadata': {
             #     'interaction_type': 'DICTATION',
             #     'microphone_distance': 'NEARFIELD',
