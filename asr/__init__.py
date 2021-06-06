@@ -47,14 +47,13 @@ def parse_chunks(stream):
 
 @app.route('/heartbeat')
 def heartbeat():
-    return 'ok'
+    return 'asr'
 
 @app.route('/NmspServlet/', methods=["POST"])
 def recognise():
     stream = request.stream
 
-    access_token, part1, part2 = request.host.split('.', 1)[0].split('-', 3)
-    lang = f"{part1}-{part2.upper()}"
+    access_token, lang = request.host.split('.', 1)[0].split('-', 1)
 
     auth_req = requests.get(f"{AUTH_URL}/api/v1/me/token", headers={'Authorization': f"Bearer {access_token}"})
     if not auth_req.ok:
