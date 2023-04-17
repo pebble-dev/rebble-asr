@@ -69,6 +69,7 @@ def recognise():
             'sample_rate_hertz': 16000,
             'max_alternatives': 1,
             'enableAutomaticPunctuation': True,
+            'model': 'latest_short',
             # 'metadata': {
             #     'interaction_type': 'DICTATION',
             #     'microphone_distance': 'NEARFIELD',
