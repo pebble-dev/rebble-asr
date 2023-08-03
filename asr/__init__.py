@@ -1,10 +1,9 @@
-import uuid
-
 import gevent.monkey
 gevent.monkey.patch_all()
 import base64
 from email.mime.multipart import MIMEMultipart
 from email.message import Message
+from .model_map import get_model_for_lang
 import json
 import struct
 import os
@@ -69,6 +68,7 @@ def recognise():
             'sample_rate_hertz': 16000,
             'max_alternatives': 1,
             'enableAutomaticPunctuation': True,
+            'model': get_model_for_lang(lang),
             # 'metadata': {
             #     'interaction_type': 'DICTATION',
             #     'microphone_distance': 'NEARFIELD',
