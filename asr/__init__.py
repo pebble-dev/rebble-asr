@@ -68,6 +68,7 @@ def recognise():
             'sample_rate_hertz': 16000,
             'max_alternatives': 1,
             'enableAutomaticPunctuation': True,
+            'enableSpokenPunctuation': True,
             'model': get_model_for_lang(lang),
             # 'metadata': {
             #     'interaction_type': 'DICTATION',
