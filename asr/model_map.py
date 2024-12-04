@@ -29,6 +29,7 @@ MODEL_MAP = {
     'pl-pl': 'latest_short',
     'ro-ro': 'latest_short',
     'ru-ru': 'latest_short',
+    'uk-ua': 'latest_short',
     'es-es': 'latest_short',
     'es-mx': 'default',  # latest_short not supported
     'es-us': 'latest_short',
