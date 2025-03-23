@@ -43,6 +43,7 @@ LANGUAGE_OVERRIDES = {
     'es-mx': 'es-us', # also dropped es-mx, apparently
     'sw-tz': 'sw-ke', # also dropped sw-tz. I don't know enough to know whether this makes sense, to be honest.
     'nb-no': 'no-no', # I'm still pretty sure this one was a typo.
+    'auto-auto': 'auto', # this is a special case for the auto-detect language code
 }
 
 
