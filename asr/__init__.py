@@ -8,6 +8,8 @@ import os
 from speex import SpeexDecoder
 from google.cloud.speech_v2 import SpeechClient
 from google.cloud.speech_v2.types import cloud_speech
+import time
+from google.api_core.exceptions import ServiceUnavailable
 
 import grpc.experimental.gevent as grpc_gevent
 grpc_gevent.init_gevent()
@@ -51,7 +53,6 @@ def parse_chunks(stream):
                     continue
                 yield content[:-2]
         if content == b'':
-            print("End of input.")
             break
 
 
@@ -106,7 +107,19 @@ def recognise():
         config=config,
         content=bytes(pcm),
     )
-    response = speech_client.recognize(asr_request, timeout=5)
+    attempts = 0
+    while True:
+        try:
+            response = speech_client.recognize(asr_request, timeout=10)
+        except ServiceUnavailable as e:
+            logging.error("ASR request failed: %s", e)
+            attempts += 1
+            if attempts > 2:
+                raise
+            time.sleep(2)
+            continue
+        else:
+            break
     logging.info("ASR request completed in %s", datetime.datetime.now() - asr_request_start)
 
     words = []
