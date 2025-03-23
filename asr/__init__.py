@@ -1,26 +1,30 @@
 import gevent.monkey
 gevent.monkey.patch_all()
-import base64
 from email.mime.multipart import MIMEMultipart
 from email.message import Message
 from .model_map import get_model_for_lang
 import json
-import struct
 import os
+from speex import SpeexDecoder
+from google.cloud.speech_v2 import SpeechClient
+from google.cloud.speech_v2.types import cloud_speech
 
 import requests
 from flask import Flask, request, Response, abort
 
 app = Flask(__name__)
 
-AUTH_URL = "https://auth.rebble.io"
-API_KEY = os.environ['SPEECH_API_KEY']
+AUTH_URL = os.environ.get("AUTH_URL", "https://auth.rebble.io")
 
+speech_client = SpeechClient(
+    client_options={"api_endpoint": "us-central1-speech.googleapis.com"}
+)
 
 # We know gunicorn does this, but it doesn't *say* it does this, so we must signal it manually.
 @app.before_request
 def handle_chunking():
     request.environ['wsgi.input_terminated'] = 1
+
 
 
 def parse_chunks(stream):
@@ -58,37 +62,46 @@ def recognise():
     if not auth_req.ok:
         abort(401)
 
+    lang = model_map.get_real_lang(lang)
+
     chunks = iter(list(parse_chunks(stream)))
     content = next(chunks).decode('utf-8')
+    print(content)
 
-    body = {
-        'config': {
-            'encoding': 'SPEEX_WITH_HEADER_BYTE',
-            'language_code': lang,
-            'sample_rate_hertz': 16000,
-            'max_alternatives': 1,
-            'enableAutomaticPunctuation': True,
-            'enableSpokenPunctuation': True,
-            'model': get_model_for_lang(lang),
-            # 'metadata': {
-            #     'interaction_type': 'DICTATION',
-            #     'microphone_distance': 'NEARFIELD',
-            # },
-        },
-        'audio': {
-            'content': base64.b64encode(b''.join((struct.pack('B', len(x)) + x for x in chunks))).decode('utf-8'),
-        },
-    }
-    result = requests.post(f'https://speech.googleapis.com/v1/speech:recognize?key={API_KEY}', json=body)
-    result.raise_for_status()
+    decoder = SpeexDecoder(1)
+    pcm = bytearray()
+    for chunk in chunks:
+        pcm.extend(decoder.decode(chunk))
+
+    config = cloud_speech.RecognitionConfig(
+        explicit_decoding_config=cloud_speech.ExplicitDecodingConfig(
+            encoding=cloud_speech.ExplicitDecodingConfig.AudioEncoding.LINEAR16,
+            sample_rate_hertz=16000,
+            audio_channel_count=1,
+        ),
+        language_codes=[lang],
+        features=cloud_speech.RecognitionFeatures(
+            profanity_filter=True, # matches current behaviour, but do we really want it?
+            enable_word_confidence=True, # Pebble uses (ignores) this
+            enable_automatic_punctuation=True,
+            max_alternatives=1,
+        ),
+        model="chirp_2",
+    )
+
+    asr_request = cloud_speech.RecognizeRequest(
+        recognizer=f"projects/pebble-rebirth/locations/us-central1/recognizers/_",
+        config=config,
+        content=bytes(pcm),
+    )
+    response = speech_client.recognize(asr_request, timeout=5)
 
     words = []
-    if 'results' in result.json():
-        for result in result.json()['results']:
-            words.extend({
-                             'word': x,
-                             'confidence': str(result['alternatives'][0]['confidence']),
-                         } for x in result['alternatives'][0]['transcript'].split(' '))
+    for result in response.results:
+        words.extend({
+                         'word': x,
+                         'confidence': str(result.alternatives[0].confidence),
+                     } for x in result.alternatives[0].transcript.split(' '))
 
     # Now for some reason we also need to give back a mime/multipart message...
     parts = MIMEMultipart()
@@ -118,4 +131,3 @@ def recognise():
     response = Response('\r\n' + parts.as_string().split("\n", 3)[3].replace('\n', '\r\n'))
     response.headers['Content-Type'] = f'multipart/form-data; boundary={parts.get_boundary()}'
     return response
-
