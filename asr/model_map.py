@@ -39,7 +39,7 @@ MODEL_MAP = {
 }
 
 LANGUAGE_OVERRIDES = {
-    'en-us': 'en-ca', # Cloud Speech V2 dropped en-ca support. chirp_2 is universal, so this is probably close enough.
+    'en-ca': 'en-us', # Cloud Speech V2 dropped en-ca support. chirp_2 is universal, so this is probably close enough.
     'es-mx': 'es-us', # also dropped es-mx, apparently
     'sw-tz': 'sw-ke', # also dropped sw-tz. I don't know enough to know whether this makes sense, to be honest.
     'nb-no': 'no-no', # I'm still pretty sure this one was a typo.

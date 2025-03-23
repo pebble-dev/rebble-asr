@@ -9,8 +9,15 @@ from speex import SpeexDecoder
 from google.cloud.speech_v2 import SpeechClient
 from google.cloud.speech_v2.types import cloud_speech
 
+import grpc.experimental.gevent as grpc_gevent
+grpc_gevent.init_gevent()
+
 import requests
 from flask import Flask, request, Response, abort
+import logging
+import datetime
+
+logging.basicConfig(level=logging.INFO)
 
 app = Flask(__name__)
 
@@ -64,15 +71,20 @@ def recognise():
 
     lang = model_map.get_real_lang(lang)
 
+    req_start = datetime.datetime.now()
+    logging.info("Received transcription request in language: %s", lang)
     chunks = iter(list(parse_chunks(stream)))
+    logging.info("Audio received in %s", datetime.datetime.now() - req_start)
     content = next(chunks).decode('utf-8')
-    print(content)
 
+    decode_start = datetime.datetime.now()
     decoder = SpeexDecoder(1)
     pcm = bytearray()
     for chunk in chunks:
         pcm.extend(decoder.decode(chunk))
+    logging.info("Decoded speex in %s", datetime.datetime.now() - decode_start)
 
+    asr_request_start = datetime.datetime.now()
     config = cloud_speech.RecognitionConfig(
         explicit_decoding_config=cloud_speech.ExplicitDecodingConfig(
             encoding=cloud_speech.ExplicitDecodingConfig.AudioEncoding.LINEAR16,
@@ -95,6 +107,7 @@ def recognise():
         content=bytes(pcm),
     )
     response = speech_client.recognize(asr_request, timeout=5)
+    logging.info("ASR request completed in %s", datetime.datetime.now() - asr_request_start)
 
     words = []
     for result in response.results:
@@ -130,4 +143,5 @@ def recognise():
 
     response = Response('\r\n' + parts.as_string().split("\n", 3)[3].replace('\n', '\r\n'))
     response.headers['Content-Type'] = f'multipart/form-data; boundary={parts.get_boundary()}'
+    logging.info("Request complete in %s", datetime.datetime.now() - req_start)
     return response
