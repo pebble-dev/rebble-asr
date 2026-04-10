@@ -129,7 +129,6 @@ def recognise():
             profanity_filter=True, # matches current behaviour, but do we really want it?
             enable_word_confidence=True, # Pebble uses (ignores) this
             enable_automatic_punctuation=True,
-            enable_spoken_punctuation=True,
             max_alternatives=1,
         ),
         model="chirp_2",
